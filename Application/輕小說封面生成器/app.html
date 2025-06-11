@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日系輕小說封面生成器 - 專業版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Yusei+Magic&family=Klee+One:wght@600&family=Zen+Maru+Gothic:wght@900&family=Sawarabi+Gothic&family=M+PLUS+Rounded+1c:wght@900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            color: #e0e1dd;
+            min-height: 100vh;
+        }
+        .title-font {
+            font-family: 'Yusei Magic', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #4f46e5, #c026d3);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(192, 38, 211, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #4a4a68;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background-color: #63638c;
+            transform: translateY(-1px);
+        }
+        .input-field {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #c026d3;
+            box-shadow: 0 0 10px rgba(192, 38, 211, 0.5);
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #c026d3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            margin: 2rem 0;
+        }
+        .control-group {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            flex: 1;
+        }
+        input[type="range"]::-webkit-slider-track {
+            background: rgba(255, 255, 255, 0.2);
+            height: 6px;
+            border-radius: 3px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #c026d3;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            margin-top: -6px;
+        }
+        input[type="range"]::-moz-range-track {
+            background: rgba(255, 255, 255, 0.2);
+            height: 6px;
+            border-radius: 3px;
+        }
+        input[type="range"]::-moz-range-thumb {
+            background: #c026d3;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            border: none;
+        }
+        .color-picker-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .color-preview {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        input[type="color"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        .tab-button.active {
+            background: rgba(192, 38, 211, 0.3);
+            border: 1px solid rgba(192, 38, 211, 0.5);
+        }
+        /* Lightbox styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.3s ease;
+        }
+        .lightbox.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            animation: zoomIn 0.3s ease;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .lightbox-close:hover {
+            color: #c026d3;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .preview-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 20px;
+        }
+        .preview-controls button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .preview-controls button:hover {
+            background: rgba(192, 38, 211, 0.5);
+        }
+        /* Small screen tab scroll */
+        @media (max-width: 768px) {
+            .tab-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            .tab-container::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="p-4 lg:p-6">
+    <div class="max-w-[1600px] mx-auto">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold title-font bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-fuchsia-500 mb-2">
+                日系輕小說封面生成器
+            </h1>
+            <p class="text-gray-400 text-sm md:text-lg">AI 助您一鍵打造專業級輕小說封面</p>
+        </header>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- Control Panel -->
+            <div class="space-y-4">
+                <!-- Step 1: Generate Base Image -->
+                <div class="glass-panel p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <span class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
+                        生成封面底圖
+                    </h2>
+                    <div class="control-group">
+                        <label for="prompt" class="block mb-2 font-semibold text-gray-300">場景描述 (Prompt)</label>
+                        <textarea id="prompt" rows="3" class="w-full p-3 rounded-lg input-field" placeholder="例：一個銀髮的魔法少女，站在星空下的古老圖書館裡，表情憂傷，手裡拿著一本發光的書"></textarea>
+                        <button id="generateBtn" class="w-full mt-4 p-3 rounded-lg font-bold btn-primary text-white flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+                            </svg>
+                            生成圖片
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div id="status" class="glass-panel p-4 hidden">
+                    <div class="flex items-center justify-center">
+                        <div class="loader mr-4"></div>
+                        <span id="statusText" class="text-lg">正在處理...</span>
+                    </div>
+                </div>
+
+                <!-- Step 2: Text Settings -->
+                <div id="text-controls" class="glass-panel p-6 opacity-50 pointer-events-none">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <span class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
+                        添加書本標題
+                    </h2>
+
+                    <!-- Text Content -->
+                    <div class="control-group mb-4">
+                        <h3 class="text-lg font-semibold mb-3">文字內容</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="main-title" class="block mb-2 text-gray-300">主標題</label>
+                                <input type="text" id="main-title" class="w-full p-3 rounded-lg input-field" placeholder="關於我轉生變成史萊姆這檔事">
+                            </div>
+                            <div>
+                                <label for="sub-title" class="block mb-2 text-gray-300">副標題</label>
+                                <input type="text" id="sub-title" class="w-full p-3 rounded-lg input-field" placeholder="魔物聯邦創世記">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label for="volume-number" class="block mb-2 text-gray-300">集數</label>
+                                    <input type="text" id="volume-number" class="w-full p-3 rounded-lg input-field" placeholder="第1卷">
+                                </div>
+                                <div>
+                                    <label for="author-name" class="block mb-2 text-gray-300">作者名</label>
+                                    <input type="text" id="author-name" class="w-full p-3 rounded-lg input-field" placeholder="伏瀬">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="publisher-name" class="block mb-2 text-gray-300">出版社</label>
+                                <input type="text" id="publisher-name" class="w-full p-3 rounded-lg input-field" placeholder="KADOKAWA">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Style Tabs -->
+                    <div class="tab-container flex gap-2 mb-4 flex-wrap">
+                        <button class="tab-button active" data-tab="position">位置</button>
+                        <button class="tab-button" data-tab="style">樣式</button>
+                        <button class="tab-button" data-tab="effects">特效</button>
+                        <button class="tab-button" data-tab="advanced">進階</button>
+                        <button class="tab-button" data-tab="transform">變形</button>
+                        <button class="tab-button" data-tab="decorations">裝飾</button>
+                    </div>
+
+                    <!-- Position Tab -->
+                    <div id="position-tab" class="control-group tab-content">
+                        <h3 class="text-lg font-semibold mb-3">位置調整</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-2 text-gray-300">主標題垂直位置</label>
+                                <div class="slider-container">
+                                    <input type="range" id="main-title-y" min="10" max="90" value="75" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="main-title-y-value">75%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">主標題水平位置</label>
+                                <div class="slider-container">
+                                    <input type="range" id="main-title-x" min="10" max="90" value="50" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="main-title-x-value">50%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">文字間距</label>
+                                <div class="slider-container">
+                                    <input type="range" id="text-spacing" min="30" max="200" value="90" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="text-spacing-value">90px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">文字對齊</label>
+                                <select id="text-align" class="w-full p-3 rounded-lg input-field">
+                                    <option value="center">置中</option>
+                                    <option value="left">靠左</option>
+                                    <option value="right">靠右</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Style Tab -->
+                    <div id="style-tab" class="control-group tab-content hidden">
+                        <h3 class="text-lg font-semibold mb-3">樣式設定</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-2 text-gray-300">字體選擇</label>
+                                <select id="font-family" class="w-full p-3 rounded-lg input-field">
+                                    <option value="Yusei Magic">Yusei Magic (優雅)</option>
+                                    <option value="Noto Sans JP">Noto Sans JP (現代)</option>
+                                    <option value="Klee One">Klee One (可愛)</option>
+                                    <option value="Zen Maru Gothic">Zen Maru Gothic (圓潤)</option>
+                                    <option value="Sawarabi Gothic">Sawarabi Gothic (明朝)</option>
+                                    <option value="M PLUS Rounded 1c">M PLUS Rounded (粗圓)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">主標題大小</label>
+                                <div class="slider-container">
+                                    <input type="range" id="main-title-size" min="30" max="150" value="80" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="main-title-size-value">80px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">主標題字間距</label>
+                                <div class="slider-container">
+                                    <input type="range" id="letter-spacing" min="-20" max="80" value="0" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="letter-spacing-value">0px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">副標題字間距</label>
+                                <div class="slider-container">
+                                    <input type="range" id="sub-letter-spacing" min="-10" max="40" value="0" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="sub-letter-spacing-value">0px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">字體粗細</label>
+                                <select id="font-weight" class="w-full p-3 rounded-lg input-field">
+                                    <option value="normal">正常</option>
+                                    <option value="bold" selected>粗體</option>
+                                    <option value="900">超粗</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block mb-2 text-gray-300">文字顏色</label>
+                                    <div class="color-picker-wrapper">
+                                        <div class="color-preview" id="text-color-preview" style="background-color: #ffffff;"></div>
+                                        <input type="color" id="text-color" value="#ffffff">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block mb-2 text-gray-300">描邊顏色</label>
+                                    <div class="color-picker-wrapper">
+                                        <div class="color-preview" id="stroke-color-preview" style="background-color: #000000;"></div>
+                                        <input type="color" id="stroke-color" value="#000000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Effects Tab -->
+                    <div id="effects-tab" class="control-group tab-content hidden">
+                        <h3 class="text-lg font-semibold mb-3">特效設定</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-2 text-gray-300">描邊粗細</label>
+                                <div class="slider-container">
+                                    <input type="range" id="stroke-width" min="0" max="30" value="10" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="stroke-width-value">10px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">陰影強度</label>
+                                <div class="slider-container">
+                                    <input type="range" id="shadow-blur" min="0" max="80" value="20" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="shadow-blur-value">20px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">陰影偏移X</label>
+                                <div class="slider-container">
+                                    <input type="range" id="shadow-x" min="-50" max="50" value="0" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="shadow-x-value">0px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">陰影偏移Y</label>
+                                <div class="slider-container">
+                                    <input type="range" id="shadow-y" min="-50" max="50" value="4" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="shadow-y-value">4px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">陰影顏色</label>
+                                <div class="color-picker-wrapper">
+                                    <div class="color-preview" id="shadow-color-preview" style="background-color: #000000;"></div>
+                                    <input type="color" id="shadow-color" value="#000000">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">透明度</label>
+                                <div class="slider-container">
+                                    <input type="range" id="text-opacity" min="20" max="100" value="100" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="text-opacity-value">100%</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="gradient-effect" class="mr-2 w-4 h-4">
+                                    <label for="gradient-effect" class="text-gray-300">漸層效果</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="glow-effect" class="mr-2 w-4 h-4">
+                                    <label for="glow-effect" class="text-gray-300">發光效果</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Tab -->
+                    <div id="advanced-tab" class="control-group tab-content hidden">
+                        <h3 class="text-lg font-semibold mb-3">進階效果</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-2 text-gray-300">發光強度</label>
+                                <div class="slider-container">
+                                    <input type="range" id="glow-strength" min="0" max="50" value="20" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="glow-strength-value">20px</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">發光顏色</label>
+                                <div class="color-picker-wrapper">
+                                    <div class="color-preview" id="glow-color-preview" style="background-color: #ffffff;"></div>
+                                    <input type="color" id="glow-color" value="#ffffff">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">描邊樣式</label>
+                                <select id="stroke-style" class="w-full p-3 rounded-lg input-field">
+                                    <option value="solid">實線</option>
+                                    <option value="double">雙線</option>
+                                    <option value="gradient">漸層</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">文字混合模式</label>
+                                <select id="blend-mode" class="w-full p-3 rounded-lg input-field">
+                                    <option value="normal">正常</option>
+                                    <option value="screen">濾色</option>
+                                    <option value="multiply">正片疊底</option>
+                                    <option value="overlay">疊加</option>
+                                    <option value="hard-light">強光</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="reflection-effect" class="mr-2 w-4 h-4">
+                                    <label for="reflection-effect" class="text-gray-300">反射效果</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="outline-effect" class="mr-2 w-4 h-4">
+                                    <label for="outline-effect" class="text-gray-300">外輪廓</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Transform Tab -->
+                    <div id="transform-tab" class="control-group tab-content hidden">
+                        <h3 class="text-lg font-semibold mb-3">變形設定</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-2 text-gray-300">旋轉角度</label>
+                                <div class="slider-container">
+                                    <input type="range" id="rotation" min="-45" max="45" value="0" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="rotation-value">0°</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">傾斜角度</label>
+                                <div class="slider-container">
+                                    <input type="range" id="skew-x" min="-30" max="30" value="0" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="skew-x-value">0°</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">水平縮放</label>
+                                <div class="slider-container">
+                                    <input type="range" id="scale-x" min="50" max="150" value="100" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="scale-x-value">100%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">垂直縮放</label>
+                                <div class="slider-container">
+                                    <input type="range" id="scale-y" min="50" max="200" value="100" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="scale-y-value">100%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">透視效果</label>
+                                <div class="slider-container">
+                                    <input type="range" id="perspective" min="0" max="100" value="0" class="flex-1">
+                                    <span class="text-sm w-12 text-right" id="perspective-value">0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="curved-text" class="mr-2 w-4 h-4">
+                                <label for="curved-text" class="text-gray-300">曲線文字</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Decorations Tab -->
+                    <div id="decorations-tab" class="control-group tab-content hidden">
+                        <h3 class="text-lg font-semibold mb-3">裝飾設定</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-2 text-gray-300">文字背景</label>
+                                <select id="text-background" class="w-full p-3 rounded-lg input-field">
+                                    <option value="none">無</option>
+                                    <option value="solid">純色</option>
+                                    <option value="gradient">漸層</option>
+                                    <option value="blur">模糊</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">背景顏色</label>
+                                <div class="color-picker-wrapper">
+                                    <div class="color-preview" id="bg-color-preview" style="background-color: #000000;"></div>
+                                    <input type="color" id="bg-color" value="#000000">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">裝飾線</label>
+                                <select id="decoration-line" class="w-full p-3 rounded-lg input-field">
+                                    <option value="none">無</option>
+                                    <option value="underline">底線</option>
+                                    <option value="overline">頂線</option>
+                                    <option value="through">刪除線</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-gray-300">邊框樣式</label>
+                                <select id="border-style" class="w-full p-3 rounded-lg input-field">
+                                    <option value="none">無</option>
+                                    <option value="simple">簡單</option>
+                                    <option value="double">雙框</option>
+                                    <option value="ornate">華麗</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="add-sparkles" class="mr-2 w-4 h-4">
+                                    <label for="add-sparkles" class="text-gray-300">星光效果</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="add-pattern" class="mr-2 w-4 h-4">
+                                    <label for="add-pattern" class="text-gray-300">圖案填充</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Download -->
+                <div class="glass-panel p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <span class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
+                        下載成品
+                    </h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="downloadBtn" class="p-3 rounded-lg font-bold btn-secondary text-white opacity-50 pointer-events-none flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            下載封面 (PNG)
+                        </button>
+                        <button id="shareBtn" class="p-3 rounded-lg font-bold btn-secondary text-white opacity-50 pointer-events-none flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+                            </svg>
+                            分享作品
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas/Preview - Now parallel with text controls -->
+            <div class="xl:sticky xl:top-4" style="height: calc(100vh - 2rem);">
+                <div class="glass-panel p-4 h-full flex flex-col">
+                    <div class="mb-4">
+                        <h2 class="text-xl font-bold flex items-center justify-center">
+                            即時預覽
+                        </h2>
+                        <p class="text-center text-gray-400 text-sm mt-1">點擊圖片放大檢視</p>
+                    </div>
+                    <div class="flex-1 flex items-center justify-center cursor-pointer" id="preview-container">
+                        <canvas id="coverCanvas" class="rounded-lg shadow-2xl bg-black bg-opacity-20" style="max-height: calc(100vh - 10rem); max-width: 100%; object-fit: contain;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <div class="lightbox-content">
+            <canvas id="lightboxCanvas" class="rounded-lg shadow-2xl"></canvas>
+            <div class="preview-controls">
+                <button id="zoomIn">放大</button>
+                <button id="zoomOut">縮小</button>
+                <button id="zoomReset">重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const promptInput = document.getElementById('prompt');
+        const generateBtn = document.getElementById('generateBtn');
+        const mainTitleInput = document.getElementById('main-title');
+        const subTitleInput = document.getElementById('sub-title');
+        const volumeNumberInput = document.getElementById('volume-number');
+        const authorNameInput = document.getElementById('author-name');
+        const publisherNameInput = document.getElementById('publisher-name');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const textControls = document.getElementById('text-controls');
+        
+        const canvas = document.getElementById('coverCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const statusDiv = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+
+        // Lightbox elements
+        const lightbox = document.getElementById('lightbox');
+        const lightboxCanvas = document.getElementById('lightboxCanvas');
+        const lightboxCtx = lightboxCanvas.getContext('2d');
+        const previewContainer = document.getElementById('preview-container');
+        const lightboxClose = document.querySelector('.lightbox-close');
+        let currentZoom = 1;
+
+        // Canvas setup
+        let baseImage = null;
+        const canvasWidth = 720; 
+        const canvasHeight = 1280;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        lightboxCanvas.width = canvasWidth;
+        lightboxCanvas.height = canvasHeight;
+
+        // Text settings with all features
+        const textSettings = {
+            mainTitleY: 75,
+            mainTitleX: 50,
+            textSpacing: 90,
+            textAlign: 'center',
+            fontFamily: 'Yusei Magic',
+            mainTitleSize: 80,
+            letterSpacing: 0,
+            subLetterSpacing: 0,
+            fontWeight: 'bold',
+            textColor: '#ffffff',
+            strokeColor: '#000000',
+            strokeWidth: 10,
+            shadowBlur: 20,
+            shadowX: 0,
+            shadowY: 4,
+            shadowColor: '#000000',
+            textOpacity: 100,
+            gradientEffect: false,
+            glowEffect: false,
+            glowStrength: 20,
+            glowColor: '#ffffff',
+            strokeStyle: 'solid',
+            blendMode: 'normal',
+            reflectionEffect: false,
+            outlineEffect: false,
+            rotation: 0,
+            skewX: 0,
+            scaleX: 100,
+            scaleY: 100,
+            perspective: 0,
+            curvedText: false,
+            textBackground: 'none',
+            bgColor: '#000000',
+            decorationLine: 'none',
+            borderStyle: 'none',
+            addSparkles: false,
+            addPattern: false
+        };
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                
+                button.classList.add('active');
+                document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+            });
+        });
+
+        // Lightbox functions
+        previewContainer.addEventListener('click', () => {
+            if (baseImage) {
+                lightbox.classList.add('show');
+                redrawCanvas(lightboxCtx, lightboxCanvas);
+            }
+        });
+
+        lightboxClose.addEventListener('click', () => {
+            lightbox.classList.remove('show');
+            currentZoom = 1;
+        });
+
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                lightbox.classList.remove('show');
+                currentZoom = 1;
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('show')) {
+                lightbox.classList.remove('show');
+                currentZoom = 1;
+            }
+        });
+
+        // Zoom controls
+        document.getElementById('zoomIn').addEventListener('click', () => {
+            currentZoom = Math.min(currentZoom * 1.2, 3);
+            applyZoom();
+        });
+
+        document.getElementById('zoomOut').addEventListener('click', () => {
+            currentZoom = Math.max(currentZoom / 1.2, 0.5);
+            applyZoom();
+        });
+
+        document.getElementById('zoomReset').addEventListener('click', () => {
+            currentZoom = 1;
+            applyZoom();
+        });
+
+        function applyZoom() {
+            lightboxCanvas.style.transform = `scale(${currentZoom})`;
+        }
+
+        // Color picker setup
+        function setupColorPicker(pickerId, previewId, property) {
+            const picker = document.getElementById(pickerId);
+            const preview = document.getElementById(previewId);
+            
+            preview.addEventListener('click', () => picker.click());
+            picker.addEventListener('change', (e) => {
+                preview.style.backgroundColor = e.target.value;
+                textSettings[property] = e.target.value;
+                redrawCanvas();
+            });
+        }
+
+        setupColorPicker('text-color', 'text-color-preview', 'textColor');
+        setupColorPicker('stroke-color', 'stroke-color-preview', 'strokeColor');
+        setupColorPicker('shadow-color', 'shadow-color-preview', 'shadowColor');
+        setupColorPicker('glow-color', 'glow-color-preview', 'glowColor');
+        setupColorPicker('bg-color', 'bg-color-preview', 'bgColor');
+
+        // Slider setup
+        function setupSlider(sliderId, displayId, property, suffix = '') {
+            const slider = document.getElementById(sliderId);
+            const display = document.getElementById(displayId);
+            
+            slider.addEventListener('input', (e) => {
+                const value = e.target.value;
+                display.textContent = value + suffix;
+                textSettings[property] = parseFloat(value);
+                redrawCanvas();
+            });
+        }
+
+        setupSlider('main-title-y', 'main-title-y-value', 'mainTitleY', '%');
+        setupSlider('main-title-x', 'main-title-x-value', 'mainTitleX', '%');
+        setupSlider('text-spacing', 'text-spacing-value', 'textSpacing', 'px');
+        setupSlider('main-title-size', 'main-title-size-value', 'mainTitleSize', 'px');
+        setupSlider('letter-spacing', 'letter-spacing-value', 'letterSpacing', 'px');
+        setupSlider('sub-letter-spacing', 'sub-letter-spacing-value', 'subLetterSpacing', 'px');
+        setupSlider('stroke-width', 'stroke-width-value', 'strokeWidth', 'px');
+        setupSlider('shadow-blur', 'shadow-blur-value', 'shadowBlur', 'px');
+        setupSlider('shadow-x', 'shadow-x-value', 'shadowX', 'px');
+        setupSlider('shadow-y', 'shadow-y-value', 'shadowY', 'px');
+        setupSlider('text-opacity', 'text-opacity-value', 'textOpacity', '%');
+        setupSlider('glow-strength', 'glow-strength-value', 'glowStrength', 'px');
+        setupSlider('rotation', 'rotation-value', 'rotation', '°');
+        setupSlider('skew-x', 'skew-x-value', 'skewX', '°');
+        setupSlider('scale-x', 'scale-x-value', 'scaleX', '%');
+        setupSlider('scale-y', 'scale-y-value', 'scaleY', '%');
+        setupSlider('perspective', 'perspective-value', 'perspective', '');
+
+        // Select controls
+        ['text-align', 'font-family', 'font-weight', 'stroke-style', 'blend-mode', 
+         'text-background', 'decoration-line', 'border-style'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                const property = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                textSettings[property] = e.target.value;
+                redrawCanvas();
+            });
+        });
+
+        // Checkbox controls
+        ['gradient-effect', 'glow-effect', 'reflection-effect', 'outline-effect',
+         'curved-text', 'add-sparkles', 'add-pattern'].forEach(id => {
+            document.getElementById(id).addEventListener('change', (e) => {
+                const property = id.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                textSettings[property] = e.target.checked;
+                redrawCanvas();
+            });
+        });
+
+        // Initial placeholder
+        function drawPlaceholder() {
+            ctx.fillStyle = '#2d2d44';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#e0e1dd';
+            ctx.textAlign = 'center';
+            ctx.font = '24px "Noto Sans JP"';
+            ctx.fillText('請在左側生成您的封面圖片', canvas.width / 2, canvas.height / 2);
+        }
+        drawPlaceholder();
+
+        // Main redraw function
+        function redrawCanvas(context = ctx, targetCanvas = canvas) {
+            if (!baseImage) return;
+
+            context.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+            context.drawImage(baseImage, 0, 0, targetCanvas.width, targetCanvas.height);
+
+            const mainTitle = mainTitleInput.value;
+            const subTitle = subTitleInput.value;
+            const volumeNumber = volumeNumberInput.value;
+            const authorName = authorNameInput.value;
+            const publisherName = publisherNameInput.value;
+            
+            context.save();
+            context.globalAlpha = textSettings.textOpacity / 100;
+            context.globalCompositeOperation = textSettings.blendMode;
+
+            // Draw main title with all effects
+            if (mainTitle) {
+                drawTextWithEffects(context, mainTitle, 
+                    targetCanvas.width * (textSettings.mainTitleX / 100),
+                    targetCanvas.height * (textSettings.mainTitleY / 100),
+                    textSettings.mainTitleSize,
+                    textSettings.letterSpacing,
+                    true
+                );
+            }
+
+            // Draw subtitle
+            if (subTitle) {
+                const subSize = textSettings.mainTitleSize * 0.5;
+                drawTextWithEffects(context, subTitle,
+                    targetCanvas.width * (textSettings.mainTitleX / 100),
+                    targetCanvas.height * (textSettings.mainTitleY / 100) - textSettings.textSpacing,
+                    subSize,
+                    textSettings.subLetterSpacing,
+                    false
+                );
+            }
+
+            // Draw volume number
+            if (volumeNumber) {
+                context.save();
+                context.font = `bold ${textSettings.mainTitleSize * 1.5}px "${textSettings.fontFamily}"`;
+                context.fillStyle = textSettings.textColor;
+                context.strokeStyle = textSettings.strokeColor;
+                context.lineWidth = textSettings.strokeWidth * 1.2;
+                context.textAlign = 'left';
+                context.textBaseline = 'top';
+                
+                if (textSettings.strokeWidth > 0) {
+                    context.strokeText(volumeNumber, 40, 30);
+                }
+                context.fillText(volumeNumber, 40, 30);
+                context.restore();
+            }
+
+            // Draw author name
+            if (authorName) {
+                context.save();
+                context.font = `${textSettings.mainTitleSize * 0.4}px "${textSettings.fontFamily}", sans-serif`;
+                context.fillStyle = textSettings.textColor;
+                context.strokeStyle = textSettings.strokeColor;
+                context.lineWidth = textSettings.strokeWidth * 0.5;
+                context.textAlign = 'right';
+                context.textBaseline = 'bottom';
+                
+                const x = targetCanvas.width - 40;
+                const y = targetCanvas.height - 30;
+                
+                if (textSettings.strokeWidth > 0) {
+                    context.strokeText(authorName, x, y);
+                }
+                context.fillText(authorName, x, y);
+                context.restore();
+            }
+
+            // Draw publisher name
+            if (publisherName) {
+                context.save();
+                context.font = `${textSettings.mainTitleSize * 0.3}px "${textSettings.fontFamily}", sans-serif`;
+                context.fillStyle = textSettings.textColor;
+                context.strokeStyle = textSettings.strokeColor;
+                context.lineWidth = textSettings.strokeWidth * 0.4;
+                context.textAlign = 'center';
+                context.textBaseline = 'bottom';
+                
+                const x = targetCanvas.width / 2;
+                const y = targetCanvas.height - 20;
+                
+                if (textSettings.strokeWidth > 0) {
+                    context.strokeText(publisherName, x, y);
+                }
+                context.fillText(publisherName, x, y);
+                context.restore();
+            }
+            
+            context.restore();
+        }
+
+        // Complex text drawing with effects
+        function drawTextWithEffects(context, text, x, y, size, spacing, isMainTitle) {
+            context.save();
+            
+            // Apply transforms
+            context.translate(x, y);
+            context.rotate((textSettings.rotation * Math.PI) / 180);
+            context.scale(textSettings.scaleX / 100, textSettings.scaleY / 100);
+            
+            // Set font
+            context.font = `${textSettings.fontWeight} ${size}px "${textSettings.fontFamily}", "Noto Sans JP", sans-serif`;
+            context.textAlign = textSettings.textAlign;
+            context.textBaseline = 'middle';
+            
+            // Apply shadow
+            if (textSettings.shadowBlur > 0) {
+                context.shadowColor = textSettings.shadowColor;
+                context.shadowBlur = textSettings.shadowBlur;
+                context.shadowOffsetX = textSettings.shadowX;
+                context.shadowOffsetY = textSettings.shadowY;
+            }
+            
+            // Draw text background if needed
+            if (textSettings.textBackground !== 'none') {
+                const metrics = context.measureText(text);
+                const bgPadding = 20;
+                context.save();
+                
+                if (textSettings.textBackground === 'solid') {
+                    context.fillStyle = textSettings.bgColor + '80';
+                    context.fillRect(-metrics.width/2 - bgPadding, -size/2 - bgPadding, 
+                                   metrics.width + bgPadding*2, size + bgPadding*2);
+                } else if (textSettings.textBackground === 'blur') {
+                    context.filter = 'blur(10px)';
+                    context.fillStyle = textSettings.bgColor + '60';
+                    context.fillRect(-metrics.width/2 - bgPadding, -size/2 - bgPadding, 
+                                   metrics.width + bgPadding*2, size + bgPadding*2);
+                }
+                context.restore();
+            }
+            
+            // Draw glow effect
+            if (textSettings.glowEffect && isMainTitle) {
+                context.save();
+                context.shadowColor = textSettings.glowColor;
+                context.shadowBlur = textSettings.glowStrength;
+                context.strokeStyle = textSettings.glowColor;
+                context.lineWidth = textSettings.glowStrength / 4;
+                drawTextWithSpacing(context, text, 0, 0, spacing);
+                context.restore();
+            }
+            
+            // Draw stroke
+            if (textSettings.strokeWidth > 0) {
+                context.strokeStyle = textSettings.strokeColor;
+                context.lineWidth = textSettings.strokeWidth;
+                
+                if (textSettings.strokeStyle === 'double') {
+                    context.lineWidth = textSettings.strokeWidth / 3;
+                    drawTextWithSpacing(context, text, 0, 0, spacing);
+                    context.strokeStyle = textSettings.textColor;
+                    context.lineWidth = textSettings.strokeWidth / 6;
+                    drawTextWithSpacing(context, text, 0, 0, spacing);
+                } else {
+                    drawTextWithSpacing(context, text, 0, 0, spacing);
+                }
+            }
+            
+            // Draw fill
+            if (textSettings.gradientEffect && isMainTitle) {
+                const gradient = context.createLinearGradient(0, -size/2, 0, size/2);
+                gradient.addColorStop(0, textSettings.textColor);
+                gradient.addColorStop(0.5, '#ffaaff');
+                gradient.addColorStop(1, textSettings.textColor);
+                context.fillStyle = gradient;
+            } else {
+                context.fillStyle = textSettings.textColor;
+            }
+            drawTextWithSpacing(context, text, 0, 0, spacing);
+            
+            // Draw decorations
+            if (textSettings.decorationLine !== 'none') {
+                const metrics = context.measureText(text);
+                context.strokeStyle = textSettings.textColor;
+                context.lineWidth = 3;
+                
+                switch(textSettings.decorationLine) {
+                    case 'underline':
+                        context.beginPath();
+                        context.moveTo(-metrics.width/2, size/2);
+                        context.lineTo(metrics.width/2, size/2);
+                        context.stroke();
+                        break;
+                    case 'overline':
+                        context.beginPath();
+                        context.moveTo(-metrics.width/2, -size/2);
+                        context.lineTo(metrics.width/2, -size/2);
+                        context.stroke();
+                        break;
+                    case 'through':
+                        context.beginPath();
+                        context.moveTo(-metrics.width/2, 0);
+                        context.lineTo(metrics.width/2, 0);
+                        context.stroke();
+                        break;
+                }
+            }
+            
+            context.restore();
+        }
+
+        // Draw text with letter spacing
+        function drawTextWithSpacing(context, text, x, y, spacing) {
+            if (spacing === 0) {
+                context.strokeText && context.strokeText(text, x, y);
+                context.fillText && context.fillText(text, x, y);
+                return;
+            }
+            
+            const chars = text.split('');
+            let totalWidth = 0;
+            
+            chars.forEach(char => {
+                totalWidth += context.measureText(char).width + spacing;
+            });
+            totalWidth -= spacing;
+            
+            let currentX = x - totalWidth / 2;
+            chars.forEach((char) => {
+                context.strokeText && context.strokeText(char, currentX, y);
+                context.fillText && context.fillText(char, currentX, y);
+                currentX += context.measureText(char).width + spacing;
+            });
+        }
+
+        // API functions
+        async function optimizePrompt(userPrompt) {
+            const systemInstruction = `You are an expert prompt engineer for an AI image generator. Transform the user's Chinese description into a detailed English prompt suitable for generating Japanese light novel cover art. 
+
+IMPORTANT: Output ONLY the final prompt text without any explanations, prefixes, or additional commentary. Do not include phrases like "Here is the prompt:" or "Create a..." - just output the pure descriptive prompt.
+
+Guidelines for the prompt:
+- Style: Japanese light novel cover art style, anime illustration, vibrant colors, detailed digital art, cinematic lighting
+- Character details: Specific hair color/style, eye color, facial expression, clothing, pose
+- Background: Detailed environment, time of day, atmosphere, lighting conditions  
+- Mood: Emotional tone (melancholic, romantic, epic, mysterious, etc.)
+- Composition: Camera angle, framing (portrait, full body, close-up, etc.)
+- Quality tags: High resolution, masterpiece, best quality, highly detailed
+
+User's description: "${userPrompt}"
+
+Output only the enhanced English prompt:`;
+            
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [{ text: systemInstruction }]
+                }],
+            };
+
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gemini API 錯誤: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text.trim();
+            } else {
+                console.error("Gemini API 返回了非預期的結構:", result);
+                throw new Error("無法從 Gemini 獲取優化後的提示詞。");
+            }
+        }
+
+        async function generateImage(optimizedPrompt) {
+            const payload = {
+                instances: [{ prompt: optimizedPrompt }],
+                parameters: { "sampleCount": 1, "aspectRatio": "9:16" }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Imagen API 錯誤: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+            } else {
+                console.error("Imagen API 返回了非預期的結構:", result);
+                throw new Error("無法從 Imagen 獲取圖片數據。");
+            }
+        }
+
+        // Main generate function
+        generateBtn.addEventListener('click', async () => {
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt) {
+                alert('請先輸入場景描述！');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            statusDiv.classList.remove('hidden');
+            
+            try {
+                statusText.textContent = '正在優化提示詞... (1/3)';
+                const optimizedPrompt = await optimizePrompt(userPrompt);
+                console.log("優化後的提示詞:", optimizedPrompt);
+
+                statusText.textContent = '正在生成封面底圖... (2/3)';
+                const imageUrl = await generateImage(optimizedPrompt);
+
+                statusText.textContent = '繪製圖片中... (3/3)';
+                baseImage = new Image();
+                baseImage.src = imageUrl;
+                baseImage.onload = () => {
+                    redrawCanvas();
+                    statusDiv.classList.add('hidden');
+                    
+                    // Enable controls
+                    textControls.classList.remove('opacity-50', 'pointer-events-none');
+                    downloadBtn.classList.remove('opacity-50', 'pointer-events-none');
+                    downloadBtn.classList.remove('btn-secondary');
+                    downloadBtn.classList.add('btn-primary');
+                    shareBtn.classList.remove('opacity-50', 'pointer-events-none');
+                };
+                baseImage.onerror = () => {
+                    throw new Error("圖片加載失敗。");
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert(`發生錯誤：${error.message}`);
+                statusText.textContent = '發生錯誤，請重試。';
+                setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        // Listen to text changes
+        [mainTitleInput, subTitleInput, volumeNumberInput, authorNameInput, publisherNameInput].forEach(input => {
+            input.addEventListener('input', () => redrawCanvas());
+        });
+
+        // Download function
+        downloadBtn.addEventListener('click', () => {
+            if (!baseImage) {
+                alert('請先生成圖片！');
+                return;
+            }
+            const link = document.createElement('a');
+            const title = mainTitleInput.value || 'light-novel-cover';
+            link.download = `${title}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Share function
+        shareBtn.addEventListener('click', async () => {
+            if (!baseImage) {
+                alert('請先生成圖片！');
+                return;
+            }
+            
+            try {
+                const blob = await new Promise(resolve => canvas.toBlob(resolve));
+                const file = new File([blob], 'cover.png', { type: 'image/png' });
+                
+                if (navigator.share) {
+                    await navigator.share({
+                        title: '我的輕小說封面',
+                        text: '看看我用 AI 生成的輕小說封面！',
+                        files: [file]
+                    });
+                } else {
+                    const data = canvas.toDataURL('image/png');
+                    await navigator.clipboard.writeText(data);
+                    alert('圖片已複製到剪貼板！');
+                }
+            } catch (error) {
+                console.error('分享失敗:', error);
+            }
+        });
+    </script>
+</body>
+</html>

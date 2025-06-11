@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 擬真攝影師 v3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #111827;
+            color: #d1d5db;
+        }
+        .control-panel select, .control-panel input[type="text"] {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+        .control-panel select:focus, .control-panel input[type="text"]:focus {
+            --tw-ring-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .custom-label {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+        }
+        .custom-label input:checked + span {
+            color: #6366f1;
+        }
+        .custom-label input:checked {
+           box-shadow: 0 0 0 2px #6366f1;
+           border-color: #6366f1;
+        }
+        .fieldset-title {
+            border-bottom: 1px solid #4b5563;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #9ca3af;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #6366f1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .history-thumbnail:hover .overlay {
+            opacity: 1;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+         .btn-secondary {
+            background-color: #15803d;
+        }
+        .btn-secondary:hover {
+            background-color: #166534;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="app" class="min-h-screen container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white">AI 擬真攝影師</h1>
+            <p class="text-gray-400 mt-2">輸入任何描述，結合專業攝影參數，生成獨一無二的逼真影像。</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- ===== 控制面板 ===== -->
+            <div class="lg:col-span-1 control-panel space-y-6 bg-gray-800 p-6 rounded-2xl shadow-lg">
+                <div>
+                    <label for="prompt" class="block text-lg font-medium text-white mb-2">1. 輸入畫面描述</label>
+                    <textarea id="prompt" name="prompt" rows="3" class="w-full rounded-md shadow-sm p-2.5 text-sm" placeholder="例如：一個男人走在下雨的東京街頭"></textarea>
+                </div>
+
+                <!-- 攝影參數 -->
+                <fieldset class="space-y-6">
+                    <legend class="text-lg font-medium text-white mb-4">2. 調整攝影參數</legend>
+                    
+                    <!-- 核心設定 -->
+                    <div class="space-y-4">
+                        <h3 class="fieldset-title">核心設定</h3>
+                        <div>
+                            <label for="styleReference" class="block text-sm font-medium text-gray-300">攝影師 / 風格參考</label>
+                            <input type="text" id="styleReference" class="mt-1 block w-full text-sm rounded-md" placeholder="例如：Ansel Adams, Cyberpunk">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                             <div>
+                                <label class="block text-sm font-medium text-gray-300">圖片比例</label>
+                                <select id="aspectRatio" class="mt-1 block w-full text-sm rounded-md">
+                                    <option value="1:1" selected>方形 (1:1)</option>
+                                    <option value="4:3">標準 (4:3)</option>
+                                    <option value="3:4">垂直 (3:4)</option>
+                                    <option value="16:9">寬螢幕 (16:9)</option>
+                                    <option value="9:16">直式 (9:16)</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-300">構圖法則</label>
+                                <select id="composition" class="mt-1 block w-full text-sm rounded-md">
+                                    <option value="">預設</option>
+                                    <option value="rule of thirds">三分法</option>
+                                    <option value="symmetrical composition">對稱構圖</option>
+                                    <option value="leading lines">引導線</option>
+                                    <option value="golden ratio">黃金螺旋</option>
+                                    <option value="diagonal composition">對角線</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 相機參數 -->
+                     <div class="space-y-4">
+                        <h3 class="fieldset-title">相機參數</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="lens" class="w-full text-sm rounded-md" title="鏡頭/焦距">
+                                <option value="">鏡頭/焦距</option>
+                                <option value="wide angle lens, 10-24mm">廣角</option>
+                                <option value="portrait lens, 24-35mm">人像</option>
+                                <option value="standard lens, 50mm">標準</option>
+                                <option value="macro lens, 60-105mm">微距</option>
+                                <option value="telephoto lens, 100-400mm">望遠</option>
+                                <option value="fisheye lens">魚眼</option>
+                            </select>
+                             <select id="cameraAngle" class="w-full text-sm rounded-md" title="相機位置">
+                                <option value="">相機位置</option>
+                                <option value="eye-level shot">水平視線</option>
+                                <option value="low-angle shot">由下往上拍</option>
+                                <option value="high-angle shot">由上往下拍</option>
+                                <option value="aerial view">空拍</option>
+                                <option value="close-up shot">特寫</option>
+                            </select>
+                             <select id="aperture" class="w-full text-sm rounded-md" title="光圈">
+                                <option value="">光圈 (景深)</option>
+                                <option value="shallow depth of field, f/1.8">大光圈 (背景模糊)</option>
+                                <option value="deep depth of field, f/16">小光圈 (全景清晰)</option>
+                            </select>
+                            <select id="shutterSpeed" class="w-full text-sm rounded-md" title="快門速度">
+                                <option value="">快門速度</option>
+                                <option value="long exposure, motion blur">長曝光 (光軌/流水)</option>
+                                <option value="high-speed shutter, freeze action">高速快門 (凝結動作)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 光線與色彩 -->
+                    <div class="space-y-4">
+                        <h3 class="fieldset-title">光線與色彩</h3>
+                         <div class="grid grid-cols-2 gap-2">
+                            <select id="lighting" class="w-full text-sm rounded-md" title="光源風格">
+                                <option value="">光源風格</option>
+                                <option value="natural lighting">自然光</option>
+                                <option value="dramatic lighting">戲劇性光</option>
+                                <option value="warm lighting, golden hour">晨曦 (暖色)</option>
+                                <option value="cold lighting, blue hour">暮光 (冷色)</option>
+                                <option value="studio lighting">攝影棚燈光</option>
+                            </select>
+                             <select id="colorPalette" class="w-full text-sm rounded-md" title="色彩模式">
+                                <option value="">色彩模式</option>
+                                <option value="vibrant colors">鮮豔</option>
+                                <option value="muted colors, low saturation">低飽和</option>
+                                <option value="monochromatic">單色</option>
+                                <option value="vintage colors">復古色調</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 底片與暗房 -->
+                    <div class="space-y-4">
+                        <h3 class="fieldset-title">底片與暗房</h3>
+                         <div class="grid grid-cols-2 gap-2">
+                             <select id="filmType" class="w-full text-sm rounded-md" title="底片類型">
+                                <option value="">底片類型</option>
+                                <option value="shot on Kodak Portra 400">柯達 Portra</option>
+                                <option value="shot on Fujifilm Superia X-TRA 400">富士 Superia</option>
+                                <option value="Polaroid photo">拍立得</option>
+                                <option value="black and white film">黑白底片</option>
+                                <option value="Lomography">LOMO</option>
+                            </select>
+                            <select id="darkroom" class="w-full text-sm rounded-md" title="暗房/沖洗技巧">
+                                <option value="">暗房/沖洗技巧</option>
+                                <option value="bleach bypass">漂白效果 (Bleach Bypass)</option>
+                                <option value="cross-processing">交叉沖洗 (Cross Processing)</option>
+                                <option value="split toning">分色調 (Split Toning)</option>
+                                <option value="dodging and burning">加亮和加深 (Dodge/Burn)</option>
+                                <option value="wet plate collodion photo">濕版攝影</option>
+                                <option value="hand-tinted photo">手繪上色</option>
+                                <option value="lith print">銅版紙沖印 (Lith Print)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 特效與後製 -->
+                    <div>
+                        <h3 class="fieldset-title">特效與後製</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="tack-sharp focus" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">銳利對焦</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="soft focus" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">柔焦</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="double exposure" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">多重曝光</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="light painting" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">光繪</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="film grain" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">電影顆粒</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="film noir style" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">黑色電影</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="HDR" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">HDR</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="4k, high detail" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">4K 高細節</span></label>
+                             <label class="custom-label flex items-center p-2 rounded-md cursor-pointer"><input type="checkbox" value="portrait, enhanced facial details" class="form-checkbox h-4 w-4 rounded mr-2"><span class="flex-1">強化臉部</span></label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="generateBtn" class="w-full flex justify-center items-center gap-2 btn-primary text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16"><path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/><path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 4.71-2.66-2.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1z"/></svg>
+                        <span id="btnText">快速生成</span>
+                    </button>
+                    <button id="enhanceGenerateBtn" class="w-full flex justify-center items-center gap-2 btn-secondary text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-stars" viewBox="0 0 16 16"><path d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.9l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.9A1.73 1.73 0 0 0 2.31 4.807l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"/></svg>
+                        <span id="enhanceBtnText">強化生成</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== 顯示區 ===== -->
+            <div class="lg:col-span-2 space-y-6">
+                 <div id="main-image-display" class="relative w-full aspect-video bg-gray-700 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg">
+                    <div id="placeholder" class="text-center text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-image-alt mx-auto" viewBox="0 0 16 16"><path d="M7 2.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0m4.225 4.053a.5.5 0 0 0-.577.093l-3.71 4.71-2.66-2.772a.5.5 0 0 0-.63.062L.002 13.5v-11a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11-2.5a.5.5 0 0 0-1 0V13.5l-2.286-3.897z"/><path d="M.002 14a1.5 1.5 0 0 0 1.5 1.5h12.996A1.5 1.5 0 0 0 16 14v-2.5l-2.286-3.897-3.71 4.71-2.66-2.772a.5.5 0 0 0-.63.062L.002 13.5z"/></svg>
+                        <p class="mt-4">設定完成後，生成的圖片將會顯示在這裡。</p>
+                    </div>
+                     <div id="loader" class="hidden absolute inset-0 bg-black bg-opacity-50 flex-col items-center justify-center z-10">
+                        <div class="loader"></div>
+                        <p id="loaderText" class="mt-4 text-white">正在為您尋找靈感...</p>
+                    </div>
+                    <img id="generatedImage" src="" class="hidden w-full h-full object-contain cursor-pointer" alt="Generated Image">
+                </div>
+                <div id="optimized-prompt-container" class="hidden bg-gray-800 p-4 rounded-lg">
+                    <h3 class="font-semibold text-white">🤖 優化後的英文 Prompt:</h3>
+                    <p id="optimizedPromptText" class="text-sm text-gray-300 mt-2 font-mono break-words"></p>
+                </div>
+            </div>
+        </main>
+        
+        <!-- ===== 歷史紀錄 ===== -->
+        <section id="history-section" class="mt-12 hidden">
+            <h2 class="text-2xl font-bold text-white mb-4 text-center">歷史生成紀錄</h2>
+            <div id="history-gallery" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- 歷史圖片會動態加到這裡 -->
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ===== 燈箱 (Lightbox) ===== -->
+    <div id="lightbox" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+        <div class="relative max-w-4xl max-h-full">
+            <img id="lightboxImage" src="" class="max-w-full max-h-[90vh] object-contain rounded-lg">
+            <button id="closeLightbox" class="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/></svg>
+            </button>
+             <a id="downloadBtn" href="#" download="generated-image.png" class="absolute bottom-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-3 hover:bg-opacity-75 transition" title="下載圖片">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg>
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM 元素
+            const generateBtn = document.getElementById('generateBtn');
+            const enhanceGenerateBtn = document.getElementById('enhanceGenerateBtn');
+            const btnText = document.getElementById('btnText');
+            const enhanceBtnText = document.getElementById('enhanceBtnText');
+            const mainImage = document.getElementById('generatedImage');
+            const placeholder = document.getElementById('placeholder');
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            const optimizedPromptContainer = document.getElementById('optimized-prompt-container');
+            const optimizedPromptText = document.getElementById('optimizedPromptText');
+            const historySection = document.getElementById('history-section');
+            const historyGallery = document.getElementById('history-gallery');
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const closeLightbox = document.getElementById('closeLightbox');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            // API 金鑰 - 留空，Canvas 環境會自動處理
+            const apiKey = "";
+            const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const imagenApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+            let isLoading = false;
+            
+            // 處理圖片生成流程的總函數
+            async function handleGeneration(isEnhanced = false) {
+                if (isLoading) return;
+
+                const userPrompt = document.getElementById('prompt').value.trim();
+                if (!userPrompt) {
+                    alert('請先輸入畫面描述！');
+                    return;
+                }
+
+                setLoading(true, isEnhanced ? '強化中...' : '生成中...');
+
+                try {
+                    const keywords = getSelectedKeywords();
+                    let finalPrompt;
+
+                    if (isEnhanced) {
+                        // 強化生成：將文字描述和關鍵字都交給 AI 進行融合與創作
+                        finalPrompt = await enhancePromptWithGemini(userPrompt, keywords);
+                    } else {
+                        // 快速生成：僅翻譯文字描述，然後直接拼接關鍵字
+                        const translatedPrompt = await translatePrompt(userPrompt);
+                        finalPrompt = `${translatedPrompt}, ${keywords}`;
+                    }
+                    
+                    optimizedPromptText.textContent = finalPrompt;
+                    optimizedPromptContainer.classList.remove('hidden');
+                    
+                    const aspectRatio = document.getElementById('aspectRatio').value;
+                    const imageData = await generateImage(finalPrompt, aspectRatio);
+                    
+                    displayImage(imageData);
+                    addToHistory(imageData);
+
+                } catch (error) {
+                    console.error('發生錯誤:', error);
+                    alert(`圖片生成失敗：${error.message}`);
+                    placeholder.classList.remove('hidden');
+                    mainImage.classList.add('hidden');
+                } finally {
+                    setLoading(false);
+                }
+            }
+            
+            // 按鈕事件監聽
+            generateBtn.addEventListener('click', () => handleGeneration(false));
+            enhanceGenerateBtn.addEventListener('click', () => handleGeneration(true));
+
+            // 獲取所有選擇的關鍵字
+            function getSelectedKeywords() {
+                const keywords = ["photograph", "realistic"];
+                
+                const styleRef = document.getElementById('styleReference').value.trim();
+                if (styleRef) keywords.push(`in the style of ${styleRef}`);
+
+                document.querySelectorAll('.control-panel select').forEach(select => {
+                    if (select.value) {
+                         // 將逗號分隔的值拆分為多個關鍵字
+                        keywords.push(...select.value.split(',').map(k => k.trim()));
+                    }
+                });
+                
+                document.querySelectorAll('.control-panel input[type="checkbox"]:checked').forEach(checkbox => {
+                    if (checkbox.value) {
+                        keywords.push(...checkbox.value.split(',').map(k => k.trim()));
+                    }
+                });
+                
+                return [...new Set(keywords)].join(', '); // 使用 Set 避免重複
+            }
+            
+            // 使用 Gemini 強化 Prompt，融合關鍵字
+            async function enhancePromptWithGemini(userPrompt, keywords) {
+                const systemPrompt = `You are a world-class AI art director and prompt engineer. Your goal is to create a superior, photorealistic image prompt by elaborating on a user's idea and selected technical parameters.
+
+**Your Process:**
+1.  **Identify the Core:** First, pinpoint the non-negotiable elements from the user's idea (the subject, the setting, the action). These elements **MUST** be the central focus of the final prompt.
+2.  **Creative Elaboration:** Based on the simplicity or detail of the user's idea, you will creatively fill in the gaps.
+    * If the user's idea is **detailed**, your main job is to enrich it, adding sensory details and connecting it seamlessly with the technical keywords.
+    * If the user's idea is **simple**, you must act as a creative director. You will invent and describe a compelling environment, atmosphere, and narrative that complements the core idea, while still integrating the technical keywords.
+3.  **Weave, Don't List:** Masterfully integrate the provided photography keywords into your descriptive paragraph. For example, instead of saying "telephoto lens," describe the "compressed perspective with a beautifully blurred background."
+4.  **Final Output:** Your response MUST be ONLY the final, single-paragraph English prompt. It must not contain any preamble, explanation, or conversational text.
+
+**User's Idea (may be in any language):** "${userPrompt}"
+**Photography Keywords:** "${keywords}"`;
+                return await callGemini(systemPrompt);
+            }
+            
+            // 僅翻譯 Prompt
+            async function translatePrompt(userPrompt) {
+                 const systemPrompt = `Translate the following text to English. Provide only the pure translation, without any extra text or quotation marks. Text: "${userPrompt}"`;
+                 return await callGemini(systemPrompt);
+            }
+
+            // 呼叫 Gemini API 的通用函數
+            async function callGemini(prompt) {
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }]
+                };
+                const response = await fetch(geminiApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                     const errorBody = await response.text();
+                     console.error("Gemini API Error Body:", errorBody);
+                     throw new Error(`Gemini API 請求失敗: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text.trim();
+                } else {
+                    console.error("Gemini API 未返回有效內容。 完整回應:", result);
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                         throw new Error(`您的請求因「${result.promptFeedback.blockReason}」而被阻擋。請嘗試修改您的描述。`);
+                    }
+                    throw new Error('Gemini API 未返回有效內容。請檢查主控台的詳細資訊。');
+                }
+            }
+
+            // 使用 Imagen 生成圖片
+            async function generateImage(prompt, aspectRatio) {
+                const payload = {
+                    instances: [{ prompt: prompt }],
+                    parameters: { 
+                        sampleCount: 1,
+                        aspectRatio: aspectRatio
+                    }
+                };
+                const response = await fetch(imagenApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("Imagen API Error Body:", errorBody);
+                    throw new Error(`Imagen API 請求失敗: ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                    return result.predictions[0].bytesBase64Encoded;
+                } else {
+                    console.error("Imagen API 未返回有效的圖片資料。 完整回應:", result);
+                    throw new Error('Imagen API 未返回有效的圖片資料。請檢查主控台。');
+                }
+            }
+            
+            // 設置加載狀態
+            function setLoading(state, text = '生成中...') {
+                isLoading = state;
+                generateBtn.disabled = state;
+                enhanceGenerateBtn.disabled = state;
+                if (state) {
+                    btnText.textContent = '請稍候';
+                    enhanceBtnText.textContent = '請稍候';
+                    generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    enhanceGenerateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    loaderText.textContent = text;
+                    loader.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    mainImage.classList.add('hidden');
+                } else {
+                    btnText.textContent = '快速生成';
+                    enhanceBtnText.textContent = '強化生成';
+                    generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    enhanceGenerateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    loader.classList.add('hidden');
+                }
+            }
+            
+            // 顯示主圖片
+            function displayImage(base64Data) {
+                const imageUrl = `data:image/png;base64,${base64Data}`;
+                mainImage.src = imageUrl;
+                mainImage.classList.remove('hidden');
+                mainImage.onclick = () => openLightbox(imageUrl);
+                placeholder.classList.add('hidden');
+            }
+
+            // 添加到歷史紀錄
+            function addToHistory(base64Data) {
+                historySection.classList.remove('hidden');
+                const imageUrl = `data:image/png;base64,${base64Data}`;
+                
+                const thumbContainer = document.createElement('div');
+                thumbContainer.className = 'history-thumbnail relative aspect-square bg-gray-700 rounded-lg overflow-hidden cursor-pointer group';
+                thumbContainer.onclick = () => openLightbox(imageUrl);
+                
+                const thumbImg = document.createElement('img');
+                thumbImg.src = imageUrl;
+                thumbImg.className = 'w-full h-full object-cover transition-transform duration-300 group-hover:scale-110';
+                
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300';
+                
+                const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="white" class="bi bi-arrows-fullscreen" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707m4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707m0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707m-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707"/></svg>`;
+                overlay.innerHTML = eyeIcon;
+                
+                thumbContainer.appendChild(thumbImg);
+                thumbContainer.appendChild(overlay);
+                
+                historyGallery.prepend(thumbContainer);
+            }
+
+            // 打開燈箱
+            function openLightbox(imageUrl) {
+                lightboxImage.src = imageUrl;
+                downloadBtn.href = imageUrl;
+                lightbox.classList.remove('hidden');
+                lightbox.classList.add('flex');
+            }
+
+            // 關閉燈箱
+            function closeLightboxFunc() {
+                lightbox.classList.add('hidden');
+                lightbox.classList.remove('flex');
+                lightboxImage.src = '';
+            }
+            
+            closeLightbox.addEventListener('click', closeLightboxFunc);
+            lightbox.addEventListener('click', (e) => {
+                if (e.target === lightbox) {
+                    closeLightboxFunc();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
