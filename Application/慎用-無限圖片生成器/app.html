@@ -3,103 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API 壓力測試圖片生成器</title>
+    <title>API 壓力測試圖片生成器（含統計）</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', 'Noto Sans TC', sans-serif;
-            background-color: #111827;
-            color: #f3f4f6;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #f8fafc;
+            min-height: 100vh;
         }
+        
         .control-panel {
-            background-color: rgba(31, 41, 55, 0.8);
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+        
+        .input-field {
+            background: rgba(15, 23, 42, 0.7);
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            color: #f8fafc;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid #374151;
         }
+        
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            outline: none;
+        }
+        
         .btn {
-            transition: all 0.2s ease-in-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 12px;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
+        
+        .btn:disabled::before {
+            display: none;
+        }
+        
         .btn-start {
-            background-color: #2563eb;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         }
+        
         .btn-start:hover:not(:disabled) {
-            background-color: #1d4ed8;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
         }
+        
         .btn-stop {
-            background-color: #dc2626;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
         }
+        
         .btn-stop:hover:not(:disabled) {
-            background-color: #b91c1c;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
         }
+        
         .image-card {
             position: relative;
             overflow: hidden;
-            border-radius: 0.5rem;
-            background-color: #374151;
-            transition: transform 0.2s ease-in-out;
+            border-radius: 16px;
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
+        
         .image-card:hover {
-            transform: scale(1.02);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(59, 130, 246, 0.3);
         }
+        
         .image-card .overlay {
             position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 50%, transparent 100%);
             color: white;
-            padding: 2rem 0.75rem 0.75rem;
+            padding: 2.5rem 1rem 1rem;
             font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
             opacity: 0;
             transform: translateY(100%);
-            transition: all 0.3s ease-in-out;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        
         .image-card:hover .overlay {
             opacity: 1;
             transform: translateY(0);
         }
+        
         .loader {
-            border: 4px solid #4b5563;
+            border: 4px solid rgba(148, 163, 184, 0.2);
             border-top: 4px solid #3b82f6;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             animation: spin 1s linear infinite;
         }
+        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            background: rgba(15, 23, 42, 0.8);
+            transform: translateY(-2px);
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #3b82f6;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.25rem;
+        }
+        
+        .title-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .status-text {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        /* 響應式網格優化 */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+        
+        @media (max-width: 640px) {
+            .image-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 0.75rem;
+            }
+        }
+        
+        /* 滾動條樣式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.3);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.6);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.8);
         }
     </style>
 </head>
 <body class="min-h-screen">
     <div id="app" class="flex flex-col h-screen">
         <!-- 控制面板 (固定在頂部) -->
-        <header class="control-panel sticky top-0 z-10 p-4 shadow-lg">
+        <header class="control-panel sticky top-0 z-10 p-6 shadow-2xl">
             <div class="max-w-7xl mx-auto">
-                <h1 class="text-2xl font-bold text-center mb-4">API 壓力測試圖片生成器</h1>
-                <div class="flex flex-col sm:flex-row gap-4 items-center">
-                    <input type="text" id="prompt-input" class="w-full bg-gray-700 text-white border border-gray-600 rounded-md py-2 px-4 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="在此輸入您的中文圖片描述...">
-                    <div class="flex gap-2">
-                        <button id="start-btn" class="btn btn-start font-semibold py-2 px-6 rounded-md w-full sm:w-auto">開始</button>
-                        <button id="stop-btn" class="btn btn-stop font-semibold py-2 px-6 rounded-md w-full sm:w-auto" disabled>停止</button>
+                <h1 class="text-3xl font-bold text-center mb-6 title-gradient">
+                    API 壓力測試圖片生成器
+                </h1>
+                
+                <div class="glass-card p-6 mb-6">
+                    <div class="flex flex-col lg:flex-row gap-6 items-end">
+                        <div class="flex-1">
+                            <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2">
+                                圖片描述
+                            </label>
+                            <input 
+                                type="text" 
+                                id="prompt-input" 
+                                class="input-field w-full py-3 px-4 text-lg" 
+                                placeholder="在此輸入您的中文圖片描述..."
+                            >
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="start-btn" class="btn btn-start py-3 px-8 text-lg">
+                                開始測試
+                            </button>
+                            <button id="stop-btn" class="btn btn-stop py-3 px-8 text-lg" disabled>
+                                停止測試
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <p id="status" class="text-center mt-3 text-gray-400 h-6"></p>
+
+                <div class="text-center mb-6">
+                    <p id="status" class="status-text text-slate-300 inline-block h-12 flex items-center justify-center min-w-[200px]">
+                        請輸入描述並點擊開始測試
+                    </p>
+                </div>
+
+                <!-- 統計數據顯示區 -->
+                <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="stat-card">
+                        <span id="stat-count" class="stat-value">0</span>
+                        <div class="stat-label">總生成數量</div>
+                    </div>
+                    <div class="stat-card">
+                        <span id="stat-avg-prompt-time" class="stat-value">0</span>
+                        <div class="stat-label">平均 Prompt 生成時間 (ms)</div>
+                    </div>
+                    <div class="stat-card">
+                        <span id="stat-avg-image-time" class="stat-value">0</span>
+                        <div class="stat-label">平均圖片生成時間 (ms)</div>
+                    </div>
+                </div>
             </div>
         </header>
 
         <!-- 圖片歷史記錄 -->
-        <main class="flex-grow overflow-y-auto p-4 lg:p-8">
-            <div id="image-history" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                <!-- 圖片卡片將會被插入到這裡 -->
+        <main class="flex-grow overflow-y-auto p-6 lg:p-8">
+            <div class="max-w-7xl mx-auto">
+                <div id="image-history" class="image-grid">
+                    <!-- 圖片卡片將會被插入到這裡 -->
+                </div>
             </div>
         </main>
     </div>
@@ -108,6 +302,11 @@
         // --- 狀態管理 ---
         let isRunning = false;
         let currentPrompt = '';
+
+        // --- 統計變數 ---
+        let imageCount = 0;
+        let totalPromptGenTime = 0;
+        let totalImageGenTime = 0;
 
         // --- DOM 元素 ---
         const promptInput = document.getElementById('prompt-input');
@@ -134,6 +333,13 @@
             isRunning = true;
             currentPrompt = ''; // 重置 prompt
             imageHistoryEl.innerHTML = ''; // 清空歷史紀錄
+            
+            // 重置統計數據
+            imageCount = 0;
+            totalPromptGenTime = 0;
+            totalImageGenTime = 0;
+            updateStatsDisplay();
+
             updateButtons();
             runStressTest();
         }
@@ -154,30 +360,37 @@
         async function runStressTest() {
             if (!isRunning) return;
 
-            // 創建並添加加載指示器
             const loadingCard = createLoadingCard();
             imageHistoryEl.prepend(loadingCard);
             
             try {
-                // 步驟 1: 取得下一個 prompt
+                // 步驟 1: 取得下一個 prompt (並計時)
                 let nextPrompt;
-                if (!currentPrompt) { // 首次運行
+                const promptStartTime = performance.now();
+                if (!currentPrompt) {
                     const initialPrompt = promptInput.value;
                     statusEl.textContent = `翻譯中: "${initialPrompt}"`;
                     nextPrompt = await translatePrompt(initialPrompt);
-                } else { // 後續運行
+                } else {
                     statusEl.textContent = `基於 "${currentPrompt}" 產生新點子...`;
                     nextPrompt = await createNextPrompt(currentPrompt);
                 }
+                const promptEndTime = performance.now();
+                totalPromptGenTime += (promptEndTime - promptStartTime);
                 currentPrompt = nextPrompt;
 
-                // 步驟 2: 生成圖片
+                // 步驟 2: 生成圖片 (並計時)
                 statusEl.textContent = `生成圖片: "${currentPrompt}"`;
+                const imageStartTime = performance.now();
                 const imageUrl = await generateImage(currentPrompt);
+                const imageEndTime = performance.now();
+                totalImageGenTime += (imageEndTime - imageStartTime);
 
-                // 步驟 3: 移除加載器並顯示圖片
+                // 步驟 3: 更新統計與UI
+                imageCount++;
                 loadingCard.remove();
                 addImageToHistory(imageUrl, currentPrompt);
+                updateStatsDisplay();
 
                 // 步驟 4: 循環 (1秒後執行下一次)
                 if (isRunning) {
@@ -186,75 +399,35 @@
             } catch (error) {
                 console.error("壓力測試循環中發生錯誤:", error);
                 statusEl.textContent = `發生錯誤，5秒後重試...`;
-                loadingCard.remove(); // 移除加載器
+                loadingCard.remove();
                 if (isRunning) {
-                    setTimeout(runStressTest, 5000); // 發生錯誤時等待較長時間
+                    setTimeout(runStressTest, 5000);
                 }
             }
         }
 
         // --- API 輔助函數 ---
-
-        // 翻譯中文 Prompt
         async function translatePrompt(chineseText) {
-            const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [{ text: `Translate the following Chinese text into a concise, creative, and effective English image generation prompt. Only return the prompt text itself, without any introductory phrases. Chinese text: "${chineseText}"` }]
-                }]
-            };
-            const response = await fetch(geminiApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+            const payload = { contents: [{ role: "user", parts: [{ text: `Translate the following Chinese text into a concise, creative, and effective English image generation prompt. Only return the prompt text itself, without any introductory phrases. Chinese text: "${chineseText}"` }] }] };
+            const response = await fetch(geminiApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`翻譯 API 錯誤: ${response.statusText}`);
             const result = await response.json();
             return result.candidates[0].content.parts[0].text.trim();
         }
 
-        // 創造新的 Prompt (已更新)
         async function createNextPrompt(previousPrompt) {
-            const newInstruction = `You are an expert in creative image prompt engineering. Your task is to transform a given prompt into something new and unexpected.
-
-Analyze the core subject of the previous prompt: "${previousPrompt}".
-
-Now, create a new prompt that meets these criteria:
-1.  **Artistic Style Overhaul:** The new prompt MUST specify a completely different artistic style. Think of diverse options like: specific painting styles (oil painting, watercolor, ukiyo-e), digital art forms (3D render, synthwave, pixel art), photography styles (macro photography, high-fashion), or the style of a famous artist (Van Gogh, H.R. Giger).
-2.  **Thematic Shift with Weak Link:** The content should be weakly related to the original subject but deliberately different. Do not just change one word. Place the core subject, or a conceptually related one, into a completely new scenario, theme, or action.
-
-For example, if the original prompt was 'a photorealistic cat sitting on a windowsill':
-- Good new prompt: 'A medieval tapestry depicting a mythical lion-cat hybrid guarding a castle gate.' (Related subject, different style, different theme).
-- Another good new prompt: 'A grainy, black and white photo of a stray cat's shadow in a lonely alley.' (Related subject, different style, different mood).
-- Bad new prompt: 'a photorealistic dog sitting on a windowsill' (Just changed the subject).
-
-Return ONLY the new English prompt text, without any explanation or introductory phrases.`;
-
-            const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [{ text: newInstruction }]
-                }]
-            };
-            const response = await fetch(geminiApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-             if (!response.ok) throw new Error(`新點子 API 錯誤: ${response.statusText}`);
+            const newInstruction = `You are an expert in creative image prompt engineering. Your task is to transform a given prompt into something new and unexpected. Analyze the core subject of the previous prompt: "${previousPrompt}". Now, create a new prompt that meets these criteria: 1. **Artistic Style Overhaul:** The new prompt MUST specify a completely different artistic style. Think of diverse options like: specific painting styles (oil painting, watercolor, ukiyo-e), digital art forms (3D render, synthwave, pixel art), photography styles (macro photography, high-fashion), or the style of a famous artist (Van Gogh, H.R. Giger). 2. **Thematic Shift with Weak Link:** The content should be weakly related to the original subject but deliberately different. Do not just change one word. Place the core subject, or a conceptually related one, into a completely new scenario, theme, or action. Return ONLY the new English prompt text, without any explanation or introductory phrases.`;
+            const payload = { contents: [{ role: "user", parts: [{ text: newInstruction }] }] };
+            const response = await fetch(geminiApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`新點子 API 錯誤: ${response.statusText}`);
             const result = await response.json();
-            return result.candidates[0].content.parts[0].text.trim().replace(/"/g, ''); // 移除可能出現的引號
+            return result.candidates[0].content.parts[0].text.trim().replace(/"/g, '');
         }
 
-        // 生成圖片
         async function generateImage(prompt) {
             const payload = { instances: [{ prompt: prompt }], parameters: { "sampleCount": 1 } };
-            const response = await fetch(imagenApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-             if (!response.ok) throw new Error(`圖片生成 API 錯誤: ${response.statusText}`);
+            const response = await fetch(imagenApiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`圖片生成 API 錯誤: ${response.statusText}`);
             const result = await response.json();
             if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
                  return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
@@ -263,6 +436,14 @@ Return ONLY the new English prompt text, without any explanation or introductory
         }
 
         // --- UI 更新函數 ---
+        function updateStatsDisplay() {
+            const avgPromptTime = imageCount > 0 ? (totalPromptGenTime / imageCount).toFixed(0) : 0;
+            const avgImageTime = imageCount > 0 ? (totalImageGenTime / imageCount).toFixed(0) : 0;
+
+            document.getElementById('stat-count').textContent = imageCount;
+            document.getElementById('stat-avg-prompt-time').textContent = avgPromptTime;
+            document.getElementById('stat-avg-image-time').textContent = avgImageTime;
+        }
         
         function createLoadingCard() {
             const card = document.createElement('div');
@@ -276,19 +457,15 @@ Return ONLY the new English prompt text, without any explanation or introductory
         function addImageToHistory(imageUrl, prompt) {
             const card = document.createElement('div');
             card.className = 'image-card';
-            
             const img = document.createElement('img');
             img.src = imageUrl;
             img.alt = prompt;
             img.className = 'w-full h-full object-cover aspect-square';
-            
             const overlay = document.createElement('div');
             overlay.className = 'overlay';
             overlay.textContent = prompt;
-            
             card.appendChild(img);
             card.appendChild(overlay);
-            
             imageHistoryEl.prepend(card);
         }
 
