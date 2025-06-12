@@ -24,7 +24,7 @@ const IMAGEN_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/
 
 ### 1. 在其他AI平台創建應用
 - 使用上述Prompt模板
-- 添加你的具體功能需求
+- 添加你的具體功能需求  
 可參考 [PromptTemplate.md](./PromptTemplate.md)，其中包含建立 APP 可用的範例 Prompt。
 - 獲得完整的HTML程式碼
 
